@@ -37,15 +37,29 @@ as.antaresDataTable.antaresDataTable <- function(x, ...) {
 #' @param opts
 #'   Simulation options.
 #' 
-#' @method as.antaresDataTable data.frame
+#' @method as.antaresDataTable data.table
 #' @export
-as.antaresDataTable.data.frame <- function(x, synthesis, timeStep, type, opts = simOptions(), ...) {
-  x <- as.data.table(x)
+as.antaresDataTable.data.table <- function(x, synthesis, timeStep, type, opts = simOptions(), ...) {
   timeStep <- match.arg(timeStep, c("hourly", "daily", "weekly", "monthly", "annual"))
-  .addClassAndAttributes(x, synthesis, timeStep, opts, type = type)
+  
+  setattr(x, "class", c("antaresDataTable", "antaresData", "data.table", "data.frame"))
+  setattr(x, "type", type)
+  setattr(x, "timeStep", timeStep)
+  setattr(x, "synthesis", synthesis)
+  setattr(x, "opts", opts)
+  
+  reorderCols(x)
+  
+  x
+}
+
+#' @export
+as.antaresDataTable.data.frame <- function(x, ...) {
+  x <- as.data.table(x)
+  as.antaresDataTable(x, ...)
 }
 
 #' @export
 as.antaresDataTable.default <- function(x, ...) {
-  stop("Cannot convert this object to an 'antaresDataList' object.")
+  stop("Cannot convert this object to an 'antaresDataTable' object.")
 }

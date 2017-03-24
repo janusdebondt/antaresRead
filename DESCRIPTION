@@ -19,7 +19,9 @@ Imports:
     lubridate,
     plyr,
     methods,
-    stats
+    stats,
+    antaresDev,
+    assertthat
 Suggests:
     testthat,
     knitr,

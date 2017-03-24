@@ -2,6 +2,8 @@
 
 #' @import data.table
 #' @import plyr
+#' @import antaresDev
+#' @import assertthat
 #' @importFrom methods is
 #' @importFrom grDevices col2rgb rgb
 #' @importFrom stats as.formula

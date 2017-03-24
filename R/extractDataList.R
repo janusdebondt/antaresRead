@@ -57,7 +57,7 @@ extractDataList <- function(x, areas=NULL) {
   }
   
   # Add time variable
-  x$areas$Dtime <- .timeIdToDate(x$areas$timeId, attr(x, "timeStep"), opts)
+  x$areas$Dtime <- timeIdToDate(x$areas$timeId, attr(x, "timeStep"), opts)
 
   # Base structure: one table per area
   dataList <- dlply(x$areas, .(area), data.table)

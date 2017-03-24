@@ -61,7 +61,7 @@ changeTimeStep <- function(x, newTimeStep, oldTimeStep, fun = "sum", opts=simOpt
   
   if (is(x, "antaresData")) {
     opts <- simOptions(x)
-    oldTimeStep <- attr(x, "timeStep")
+    oldTimeStep <- timeStep(x)
   }
   
   if (newTimeStep == oldTimeStep) return(x)
@@ -71,40 +71,37 @@ changeTimeStep <- function(x, newTimeStep, oldTimeStep, fun = "sum", opts=simOpt
       x[[i]] <- changeTimeStep(x[[i]], newTimeStep, oldTimeStep, fun, opts)
     }
     
-    attr(x, "timeStep") <- newTimeStep
+    setTimeStep(x, newTimeStep)
     
     return(x)
   }
   
+  # Prevent accidentally modifiing input data
+  x <- copy(x)
   # Keep a copy of attributes to put them back at the end of the function
-  synthesis <- attr(x, "synthesis")
-  type <- attr(x, "type")
+  synthesis <- synthesis(x)
+  type <- type(x)
   
   # Should we had date-time columns ?
-  addDateTimeCol <- !is.null(x[["time"]])
+  addDateTimeCol <- "time" %in% names(x)
   
   # Suppress time variables
-  if (!is.null(x[["time"]])) x$time <- NULL
-  if (!is.null(x$hour)) x$hour <- NULL
-  if (!is.null(x$day)) x$day <- NULL
-  if (!is.null(x$week)) x$week <- NULL
-  if (!is.null(x$month)) x$month <- NULL
+  colToSuppr <- intersect(names(x), c("time", "hour", "day", "week", "month"))
+  if (length(colToSuppr) > 0) x[, c(colToSuppr) := NULL]
   
   # Strategy: if newTimeStep is not hourly, first desagregate data at hourly
   # level. Then, in all cases aggregate hourly data at the desired level.
   refTime <- data.table(
-    oldTimeId = .getTimeId(opts$timeIdMin:opts$timeIdMax, oldTimeStep, opts),
-    timeId = .getTimeId(opts$timeIdMin:opts$timeIdMax, newTimeStep, opts)
+    oldTimeId = convertTimeId(opts$timeIdMin:opts$timeIdMax, oldTimeStep, opts),
+    timeId = convertTimeId(opts$timeIdMin:opts$timeIdMax, newTimeStep, opts)
   )
   
-  x <- copy(x)
   setnames(x, "timeId", "oldTimeId")
   x <- merge(x, refTime, by = "oldTimeId", allow.cartesian=TRUE)
   
   # Desagregation
   if (oldTimeStep != "hourly") {
-    idVars <- c(.idCols(x), "oldTimeId")
-    idVars  <- idVars[idVars != "timeId"]
+    idVars <- c(idCols(x, exclude = "timeId"), "oldTimeId")
     by <- parse(text = sprintf("list(%s)", paste(idVars, collapse = ", ")))
     
     # Code below is a bit hacky: we want to use a window function on all variables but one (timeId).
@@ -112,74 +109,35 @@ changeTimeStep <- function(x, newTimeStep, oldTimeStep, fun = "sum", opts=simOpt
     # from the table, use the syntax of data.table to perform the window function
     # and finally put back the timeId in the table.
     setorderv(x, idVars)
-    timeId <- x$timeId
+    .timeId <- x$timeId
     x$timeId <- NULL
     
     if (length(fun) == 1) fun <- rep(fun, ncol(x) - length(idVars))
     
     x <- x[, mapply(function(x, f) {f(x, .N)}, x = .SD, f = ifuns[fun], SIMPLIFY=FALSE), by = eval(by)]
     
-    x$timeId <- timeId
+    x[, timeId := .timeId]
     
-    .reorderCols(x)
+    reorderCols(x)
   }
   
   x$oldTimeId <- NULL
   
   # Aggregation
   if (newTimeStep != "hourly") {
-    idVars <- .idCols(x)
+    idVars <- idCols(x)
     
     if (length(fun) == 1) fun <- rep(fun, ncol(x) - length(idVars))
     
     x <- x[, mapply(function(x, f) {f(x)}, x = .SD, f = funs[fun], SIMPLIFY=FALSE), keyby=idVars]
   }
   
-  x <- .addClassAndAttributes(x, synthesis, newTimeStep, opts, type = type)
+  x <- as.antaresDataTable(x, synthesis = synthesis, timeStep = newTimeStep, 
+                           opts = opts, type = type)
+  
+  setTimeStep(x, newTimeStep)
   
   if(addDateTimeCol) addDateTimeColumns(x)
   
   x
-}
-
-.getTimeId <- function(hourId, timeStep, opts) {
-  # Easy cases
-  if (timeStep == "hourly") return(hourId)
-  
-  if (timeStep == "daily") {
-    return( (hourId - 1) %/% 24 + 1 )
-  }
-  
-  if (timeStep == "annual") {
-    return(rep(1L, length(hourId)))
-  }
-  
-  # Hard cases
-  # Create a correlation table between hourIds and actual dates and compute new 
-  # timeIds based on the actual dates
-  timeRef <- data.table(hourId = 1:(24*365))
-  
-  tmp <- as.POSIXct(opts$start)
-  lubridate::hour(tmp) <- lubridate::hour(tmp) + timeRef$hourId - 1
-  timeRef$hour <- tmp
-  
-  if (timeStep == "weekly") {
-    timeRef$wday <- lubridate::wday(timeRef$hour)
-    startWeek <- which(c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday") == opts$firstWeekday)
-    timeRef[, change := wday == startWeek & wday != shift(wday)]
-    timeRef$change[1] <- TRUE
-    timeRef[, timeId := cumsum(change)]
-    
-    return(timeRef$timeId[hourId])
-  }
-  
-  if (timeStep == "monthly") {
-    timeRef$month <- lubridate::month(timeRef$hour)
-    timeRef[, change :=  month != shift(month)]
-    timeRef$change[1] <- TRUE
-    timeRef[, timeId := cumsum(change)]
-    
-    return(timeRef$timeId[hourId])
-  }
-  
 }

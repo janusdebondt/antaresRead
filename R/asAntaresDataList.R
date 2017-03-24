@@ -40,7 +40,8 @@ as.antaresDataList.antaresDataTable <- function(x, name = NULL, ...) {
   x <- list(x)
   names(x) <- name
   
-  .addClassAndAttributes(x, attrs$synthesis, attrs$timeStep, attrs$opts, FALSE)
+  as.antaresDataList(x, timeStep = attrs$timeStep, synthesis = attrs$synthesis,
+                     opts = attrs$opts)
 }
 
 #' @rdname as.antaresDataList
@@ -61,7 +62,16 @@ as.antaresDataList.data.frame <- function(x, synthesis, timeStep, type,
 
 #' @export
 as.antaresDataList.list <- function(x, synthesis, timeStep, opts = simOptions(), ...) {
-  .addClassAndAttributes(x, synthesis, timeStep, opts, FALSE)
+  for (n in names(x)) {
+    x[[n]] <- as.antaresDataTable(x[[n]], timeStep = timeStep, 
+                                  synthesis = synthesis, opts = opts, type = n)
+  }
+  
+  class(x) <- append(c("antaresDataList", "antaresData"), class(x))
+  attr(x, "timeStep") <- timeStep
+  attr(x, "synthesis") <- synthesis
+  attr(x, "opts") <- opts
+  x
 }
 
 #' @export

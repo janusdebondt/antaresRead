@@ -41,8 +41,8 @@
   # create a table filled with 0. Else we return NULL
   timeRange <- switch(inputTimeStep, 
                       hourly=c(opts$timeIdMin, opts$timeIdMax), 
-                      daily=range(.getTimeId(opts$timeIdMin:opts$timeIdMax, "daily", opts)), 
-                      monthly=range(.getTimeId(opts$timeIdMin:opts$timeIdMax, "monthly", opts)))
+                      daily=range(convertTimeId(opts$timeIdMin:opts$timeIdMax, "daily", opts)), 
+                      monthly=range(convertTimeId(opts$timeIdMin:opts$timeIdMax, "monthly", opts)))
   
   if (!file.exists(path) || file.size(path) == 0) {
     if (type == "matrix") return(NULL)

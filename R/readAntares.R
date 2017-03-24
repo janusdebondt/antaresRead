@@ -389,13 +389,31 @@ readAntares <- function(areas = NULL, links = NULL, clusters = NULL,
   }
 
   if (thermalAvailabilities) {
-    .addOutputToRes("thermalAvailabilities", clusters, .importThermal, NA)
+    #.addOutputToRes("thermalAvailabilities", clusters, .importThermal, NA)
+    res$thermalAvailabilities <- .importThermal(
+      areas = clusters,
+      synthesis = synthesis,
+      mcYears = mcYears,
+      timeStep = timeStep,
+      opts = opts,
+      showProgress = showProgress,
+      parallel = parallel
+    )
     .mergeByRef(res$clusters, res$thermalAvailabilities)
     res$thermalAvailabilities <- NULL
   }
 
   if (hydroStorage) {
-    .addOutputToRes("hydroStorage", areas, .importHydroStorage, NA)
+    res$hydroStorage <- .importHydroStorage(
+      areas, 
+      mcYears = mcYears, 
+      synthesis = synthesis,
+      timeStep = timeStep, 
+      opts = opts,
+      showProgress = showProgress,
+      parallel = parallel
+    )
+
     if (!is.null(res$areas)) .mergeByRef(res$areas, res$hydroStorage)
 
     if (!is.null(districts)) {
@@ -442,14 +460,17 @@ readAntares <- function(areas = NULL, links = NULL, clusters = NULL,
     .addOutputToRes("thermalModulation", union(areas, clusters), .importThermalModulation, NA)
 
     if (!is.null(res$clusters)) {
-      .mergeByRef(res$clusters, res$thermalModulation)
+      mergeByRef(res$clusters, res$thermalModulation)
     }
 
     if (!mustRun | !timeStep == "hourly") res$thermalModulation <- NULL
   }
 
   # Class and attributes
-  res <- .addClassAndAttributes(res, synthesis, timeStep, opts, simplify)
+  res <- as.antaresDataList(res, synthesis = synthesis, timeStep = timeStep, 
+                            opts = opts)
+  
+  if(simplify && length(res) == 1) res <- res[[1]]
 
   # Add date/time columns
   addDateTimeColumns(res)

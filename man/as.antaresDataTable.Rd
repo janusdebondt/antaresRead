@@ -2,12 +2,12 @@
 % Please edit documentation in R/asAntaresDataTable.R
 \name{as.antaresDataTable}
 \alias{as.antaresDataTable}
-\alias{as.antaresDataTable.data.frame}
+\alias{as.antaresDataTable.data.table}
 \title{Convert objects to antaresDataTable}
 \usage{
 as.antaresDataTable(x, ...)
 
-\method{as.antaresDataTable}{data.frame}(x, synthesis, timeStep, type,
+\method{as.antaresDataTable}{data.table}(x, synthesis, timeStep, type,
   opts = simOptions(), ...)
 }
 \arguments{
