@@ -12,6 +12,7 @@
   res <- llply(areas, .importThermalForArea,
                synthesis = synthesis, timeStep = timeStep, mcYears = mcYears, opts = opts,
                .parallel = parallel,
+               .paropts = list(.packages="antaresRead"),
                .progress = ifelse(showProgress, "text", "none")) 
   
   res <- rbindlist(res)

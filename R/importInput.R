@@ -57,7 +57,10 @@
   inputTS$timeId <- timeRange[1]:timeRange[2]
   .reorderCols(inputTS)
   
-  inputTS <- changeTimeStep(inputTS, timeStep, inputTimeStep, fun = fun)
+  if (timeStep != inputTimeStep) {
+    inputTS <- changeTimeStep(inputTS, timeStep, oldTimeStep = inputTimeStep, 
+                              fun = fun, opts = opts)
+  }
   
   # If the data is a matrix of time series melt the data
   if (type == "matrix") {
@@ -184,6 +187,7 @@
     modulation <- modulation[opts$timeIdMin:opts$timeIdMax]
     modulation$timeId <- opts$timeIdMin:opts$timeIdMax
     
-    changeTimeStep(modulation, timeStep, "hourly", fun = "mean")
+    # changeTimeStep(modulation, timeStep, "hourly", fun = "mean")
+    modulation
   })
 }

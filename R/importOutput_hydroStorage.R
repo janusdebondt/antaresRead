@@ -8,10 +8,13 @@
 .importHydroStorage  <- function(areas, synthesis, timeStep, mcYears, showProgress, opts, parallel, ...) {
   if (showProgress) cat("Importing hydroStorage\n")
   if (synthesis) mcYears <- opts$mcYears
-  res <- llply(areas, .importHydroStorageForArea, synthesis = synthesis, 
-               timeStep = timeStep, mcYears = mcYears, opts = opts,
-               .parallel = parallel, .progress = ifelse(showProgress, "text", "none")
-  )
+  
+  res <- llply(areas, .importHydroStorageForArea, 
+               synthesis = synthesis, timeStep = timeStep, mcYears = mcYears, opts = opts,
+               .parallel = parallel,
+               .paropts = list(.packages="antaresRead"),
+               .progress = ifelse(showProgress, "text", "none"))
+  
   res <- rbindlist(res)
   res <- as.antaresDataTable(res, synthesis = FALSE, timeStep = "monthly", 
                              type = "hydroStorage", opts = opts)

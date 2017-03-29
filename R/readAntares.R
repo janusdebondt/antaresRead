@@ -294,22 +294,27 @@ readAntares <- function(areas = NULL, links = NULL, clusters = NULL,
   res <- list() # Object the function will return
 
   # local function that add a type of output to the object "res"
-  .addOutputToRes <- function(name, ids, outputFun, select, ts = timeStep) {
+  .addInputToRes <- function(name, ids, outputFun, select, ts = timeStep, aggrFun = "sum") {
     if (is.null(ids) | length(ids) == 0) return(NULL)
 
     if (showProgress) cat(sprintf("Importing %s\n", name))
 
     tmp <- suppressWarnings(
       llply(ids, function(x, ...) outputFun(x, ...),
-            synthesis=synthesis, mcYears=mcYears,timeStep=ts,
-            opts=opts, select = select,
+            synthesis=synthesis, mcYears=mcYears,
+            opts=opts, select = select, timeStep = ts,
             .progress = ifelse(showProgress, "text", "none"),
             .parallel = parallel,
             .paropts = list(.packages="antaresRead"))
     )
 
     tmp <- rbindlist(tmp)
-
+    
+    tmp <- as.antaresDataTable(tmp, timeStep = "hourly", synthesis = synthesis, 
+                               type = name, opts = opts)
+    
+    tmp <- changeTimeStep(tmp, ts, fun = aggrFun)
+    
     res[[name]] <<- tmp
     gc() # Ensures R frees unused memory
   }
@@ -377,7 +382,7 @@ readAntares <- function(areas = NULL, links = NULL, clusters = NULL,
   # Add input time series
 
   if (misc) {
-    .addOutputToRes("misc", areas, .importMisc, NA)
+    .addInputToRes("misc", areas, .importMisc, NA)
     if (!is.null(res$areas)) .mergeByRef(res$areas, res$misc)
     if (!is.null(districts)) {
       res$misc <- merge(res$misc, districts, by = "area", allow.cartesian = TRUE)
@@ -389,7 +394,7 @@ readAntares <- function(areas = NULL, links = NULL, clusters = NULL,
   }
 
   if (thermalAvailabilities) {
-    #.addOutputToRes("thermalAvailabilities", clusters, .importThermal, NA)
+    #.addInputToRes("thermalAvailabilities", clusters, .importThermal, NA)
     res$thermalAvailabilities <- .importThermal(
       areas = clusters,
       synthesis = synthesis,
@@ -427,7 +432,7 @@ readAntares <- function(areas = NULL, links = NULL, clusters = NULL,
   }
 
   if (hydroStorageMaxPower) {
-    .addOutputToRes("hydroStorageMaxPower", areas, .importHydroStorageMaxPower, NA)
+    .addInputToRes("hydroStorageMaxPower", areas, .importHydroStorageMaxPower, NA)
     if (!is.null(res$areas)) .mergeByRef(res$areas, res$hydroStorageMaxPower)
     if (!is.null(res$districts)) {
       res$hydroStorageMaxPower <- merge(res$hydroStorageMaxPower, districts, by = "area", allow.cartesian = TRUE)
@@ -439,7 +444,7 @@ readAntares <- function(areas = NULL, links = NULL, clusters = NULL,
   }
 
   if (reserve) {
-    .addOutputToRes("reserve", areas, .importReserves, NA)
+    .addInputToRes("reserve", areas, .importReserves, NA)
     if(!is.null(res$areas)) .mergeByRef(res$areas, res$reserve)
     if (!is.null(districts)) {
       res$reserve <- merge(res$reserve, districts, by = "area", allow.cartesian = TRUE)
@@ -451,13 +456,15 @@ readAntares <- function(areas = NULL, links = NULL, clusters = NULL,
   }
 
   if (linkCapacity) {
-    .addOutputToRes("linkCapacity", links, .importLinkCapacity, NA)
-    res$links <- merge(res$links, res$linkCapacity, by=c("link", "timeId"))
+    .addInputToRes("linkCapacity", links, .importLinkCapacity, NA, 
+                   aggrFun = c("sum", "sum", "mean", "mean", "mean"))
+    .mergeByRef(res$links, res$linkCapacity)
     res$linkCapacity <- NULL
   }
 
   if (thermalModulation) {
-    .addOutputToRes("thermalModulation", union(areas, clusters), .importThermalModulation, NA)
+    .addInputToRes("thermalModulation", union(areas, clusters), 
+                   .importThermalModulation, NA, aggrFun = "mean")
 
     if (!is.null(res$clusters)) {
       mergeByRef(res$clusters, res$thermalModulation)

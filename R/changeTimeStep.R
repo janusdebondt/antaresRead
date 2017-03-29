@@ -48,7 +48,7 @@
 #' 
 #' @export
 #' 
-changeTimeStep <- function(x, newTimeStep, oldTimeStep, fun = "sum", opts=simOptions()) {
+changeTimeStep <- function(x, newTimeStep, oldTimeStep = timeStep(x), fun = "sum", opts=simOptions(x)) {
   fun <- match.arg(fun, c("sum", "mean", "min", "max"), several.ok = TRUE)
   
   # Agregation function
@@ -58,11 +58,6 @@ changeTimeStep <- function(x, newTimeStep, oldTimeStep, fun = "sum", opts=simOpt
                 mean = function(x, n) {x},
                 min = function(x, n) {x},
                 max = function(x, n) {x})
-  
-  if (is(x, "antaresData")) {
-    opts <- simOptions(x)
-    oldTimeStep <- timeStep(x)
-  }
   
   if (newTimeStep == oldTimeStep) return(x)
   
@@ -79,8 +74,13 @@ changeTimeStep <- function(x, newTimeStep, oldTimeStep, fun = "sum", opts=simOpt
   # Prevent accidentally modifiing input data
   x <- copy(x)
   # Keep a copy of attributes to put them back at the end of the function
-  synthesis <- synthesis(x)
-  type <- type(x)
+  if (inherits(x, "antaresData")) {
+    synthesis <- synthesis(x)
+    type <- type(x)
+  } else {
+    synthesis <- NULL
+    type <- NULL
+  }
   
   # Should we had date-time columns ?
   addDateTimeCol <- "time" %in% names(x)

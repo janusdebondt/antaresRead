@@ -257,6 +257,8 @@
         x <- reshapeFun(x)
         mustRunPartial <- mod[J(x$area, x$cluster, x$timeId), mustRunPartial]
         x[, mustRunPartial := pmin(production, mustRunPartial)]
+        x <- as.antaresDataTable(x, timeStep = "hourly", synthesis = TRUE, 
+                                 type = "mustRun", opts = opts)
         changeTimeStep(x, timeStep, "hourly", fun = "sum", opts = opts)
       }
       
