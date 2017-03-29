@@ -29,3 +29,5 @@ Suggests:
     foreach
 RoxygenNote: 6.0.0
 VignetteBuilder: knitr
+Remotes:
+    rte-antares-rpackage/antares-rpackageUtils

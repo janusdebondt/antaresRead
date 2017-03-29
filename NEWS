@@ -1,5 +1,22 @@
 # Copyright © 2016 RTE Réseau de transport d’électricité
 
+Changes in version 1.1.0 (2017-XX-XX)
+
+NEW FEATURES:
+* The "select" parameter of readAntares() now accepts new keywords: "areas", "links", "clusters", "districts" to tell the function to import area, link, cluster or district data; "misc", "mustRun",
+"thermalAvailabilities", etc. to set the correponding parameters to TRUE.
+* New function "setAlias()" to create new aliases. Aliases are short names that can be used in the "select" parameter of readAntares to read some columns and type of data. This can be especially useful for package developers to help users read the required data.
+* readBindingConstraints() has been enhanced. It returns a "bindingConstraints" object that can be summarized with the summary method.
+* readAntares(mustRun = TRUE) now creates a new column called "thermalPmin". It is similar to the column "mustRunTotal" except it also takes into account the thermal production forced by the minimum stable power of the units of clusters.
+
+BUGFIXES:
+* Parallel import has been fixed.
+* setSimulationPath was not working correctly when synthesis and the first Monte-Carlo scenario had not been saved.
+* setSimulation was sometimes incorrectly correcting the horizon year of the study.
+* Columns "pumpingCapacity" and "storageCapacity" created by "removeVirtualAreas()" were reversed. 
+* Minor bug fixes in setSimulationPath().
+
+
 Changes in version 1.0.0 (2017-02-23)
 
 BUGFIXES:
